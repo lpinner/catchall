@@ -1,0 +1,12 @@
+<RCC>
+  <qresource prefix="resources">
+    <file>images/minus_16x4.png</file>
+    <file>images/plus_16x16.png</file>
+    <file>images/cog_16x16.png</file>
+    <file>images/x_14x14.png</file>
+    <file>images/lock_fill_24x32.png</file>
+    <file>images/mail_16x12.png</file>
+    <file>images/reload_alt_12x14.png</file>
+    <file>images/loading.gif</file>
+  </qresource>
+</RCC>
