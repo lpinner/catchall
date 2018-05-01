@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python3
+Module=budgieddcbrightness
+Name=Brightness
+Description=Screen Brightness
+Authors=Luke Pinner
+Copyright=Copyright © 2018 Luke Pinner
+Website=https://github.com/lpinner
+Icon=display-brightness-symbolic
