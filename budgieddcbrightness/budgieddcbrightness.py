@@ -27,7 +27,7 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
         self.box = Gtk.EventBox()
         self.icon = Gtk.Image.new_from_icon_name(
             "display-brightness-symbolic",
-            Gtk.IconSize.BUTTON)
+            Gtk.IconSize.MENU)
         self.box.add(self.icon)
         self.box.set_tooltip_text("Screen Brightness")
         self.add(self.box)
@@ -82,14 +82,29 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
     def get_brightness(self):
         # Example:
         # "VCP 10 C 50 100"
-        _, _, _, current, maximum = subprocess.check_output(
+        _, _, _, value, maximum = subprocess.check_output(
             ['ddcutil', '-t', 'getvcp', '10'], 
             encoding='utf8').split()
-        return int(current)
+        value = int(value)
+        self.update_icon(value)
+        return value
 
     def set_brightness(self, value):
         subprocess.call(['ddcutil' ,'setvcp', '10', str(value)])
-        
+        self.update_icon(value)
+
+    def update_icon(self, value):
+        if value <= 10:
+            icon = "display-brightness-off-symbolic"
+        elif value <= 25:
+            icon = "display-brightness-low-symbolic"
+        elif value <= 75:
+            icon = "display-brightness-medium-symbolic"
+        else:
+            icon = "display-brightness-high-symbolic"
+
+        self.icon.set_from_icon_name(icon, Gtk.IconSize.BUTTON)
+
     def	_on_press(self, box, e):
         # Ignore anything other than left or middle click
         if e.button not in [1, 2]:
@@ -127,7 +142,6 @@ class DiscreteScale(Gtk.Scale):
     def get_value(self, *args, **kwargs):
         return self.__closest_value(super().get_value())
 
-
     def set_value(self, value, scroll_type=None):
         self.handler_block(self.__changed_value_id)
         if scroll_type is None:
@@ -135,7 +149,6 @@ class DiscreteScale(Gtk.Scale):
         else:
             self.emit('change-value', scroll_type, value)
         self.handler_unblock(self.__changed_value_id)
-
 
     def __change_value(self, scale, scroll_type, value):
         # find the closest valid value
@@ -147,3 +160,15 @@ class DiscreteScale(Gtk.Scale):
     def __closest_value(self, value):
         return min(self.values, key=lambda v:abs(value-v))
 
+
+if __name__ == '__main__':
+    import uuid
+
+    win = Gtk.Window()
+
+    ba = BudgieDdcBrightnessApplet(uuid.uuid4())
+    ba.do_update_popovers(Budgie.PopoverManager())
+    # setup an instance with config
+    win.add(ba)
+    win.show_all()
+    Gtk.main()
