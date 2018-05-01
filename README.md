@@ -1,4 +1,4 @@
-# catchall
-Catch all repo for general "stuff"
+# Catch all repo for general "stuff". 
 
-Unmaintained...
+Mainly for my own use, not intended as as projects for general usage.  Only maintained as and when I need to. 
+
