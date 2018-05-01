@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# TODO does not work with arrow keys
 import subprocess
 import dbus
 import gi
@@ -39,10 +40,10 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
         layout = Gtk.Grid()
         layout.set_border_width(6)
 
-        adjustment = Gtk.Adjustment(50, 0, 100, 5, 0, 0)
+        adjustment = Gtk.Adjustment(50, 5, 100, 5, 0, 0)
 
-        self.scale = DiscreteScale(list(range(5,105,5)), 
-            orientation=Gtk.Orientation.HORIZONTAL, 
+        self.scale = Gtk.Scale(
+            orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=adjustment)
         self.set_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
         self.scale.set_draw_value(False)
@@ -50,9 +51,8 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
         self.scale.set_vexpand(True)
         self.scale.set_hexpand(True)
 
-        self.scale.add_mark(5, Gtk.PositionType.LEFT, '5')
-        for i in range(25, 125, 25):
-            self.scale.add_mark(i, Gtk.PositionType.LEFT, str(i))
+        for i, mark in enumerate( (0, 25, 50, 75, 100)):
+            self.scale.add_mark(mark, Gtk.PositionType.LEFT, str(mark))
 
         layout.add(self.scale)
 
@@ -69,8 +69,8 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
         self.scale.set_value(self.get_brightness())
 
     def button_released(self, *args, **kwargs):
-        self.set_brightness(self.scale.get_value())
-        return True 
+        self.set_brightness(int(self.scale.get_value()))
+        return True
 
     def do_supports_settings(self):
         return False
@@ -94,9 +94,7 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
         self.update_icon(value)
 
     def update_icon(self, value):
-        if value <= 10:
-            icon = "display-brightness-off-symbolic"
-        elif value <= 25:
+        if value <= 25:
             icon = "display-brightness-low-symbolic"
         elif value <= 75:
             icon = "display-brightness-medium-symbolic"
@@ -122,43 +120,6 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
         else:
             self.manager.show_popover(self.box)
         return Gdk.EVENT_STOP
-
-
-class DiscreteScale(Gtk.Scale):
-    """ CC-By-SA https://stackoverflow.com/a/39036673 """
-    def __init__(self, values, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        values.sort()
-        self.previous_value = None
-        self.values= values
-
-        adjustment= self.get_adjustment()
-        adjustment.set_lower(values[0])
-        adjustment.set_upper(values[-1])
-
-        self.__changed_value_id= self.connect('change-value', self.__change_value)
-
-    def get_value(self, *args, **kwargs):
-        return self.__closest_value(super().get_value())
-
-    def set_value(self, value, scroll_type=None):
-        self.handler_block(self.__changed_value_id)
-        if scroll_type is None:
-            super().set_value(value)
-        else:
-            self.emit('change-value', scroll_type, value)
-        self.handler_unblock(self.__changed_value_id)
-
-    def __change_value(self, scale, scroll_type, value):
-        # find the closest valid value
-        value = self.__closest_value(value)
-        self.set_value(value, scroll_type)
-        return True #prevent the signal from escalating
-
-
-    def __closest_value(self, value):
-        return min(self.values, key=lambda v:abs(value-v))
 
 
 if __name__ == '__main__':
