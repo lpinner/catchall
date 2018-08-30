@@ -1,5 +1,9 @@
 callback(
 [
+{ "name": "[Q] More info", "description": "Can you please edit your question and add more details about [type here]. Thanks!"},
+
+{ "name": "[Q] Screenshots", "description": "Can you please edit your question and add code/error messages at text formatted using the `{}` button instead of as a screenshot. Thanks!"},
+
 { "name": "[Q] More than one question asked", "description": "It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!"},
 
 { "name": "[Q] Duplicate Closure", "description": "This question will probably be closed as a duplicate soon. If the answers from the duplicates don't fully address your question please edit it to include why and flag this for re-opening. Thanks!"},
