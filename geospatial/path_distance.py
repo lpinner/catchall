@@ -4,6 +4,10 @@ Calculate path distance from an ArcGIS least cost backlink raster
 I wrote this before I discovered the flow length tool does the same thing if you convert the backlink raster
 to a flow direction raster `flowdir = Int(0.5 * 2 ** backlink)`
 
+However... this is significantly faster than the ArcGIS tool: for a 250m raster covering continental Australia (18500*16500 pixels) 
+this script takes ~1min, while the ArcGIS FlowLength tool takes >15min, not including the time to calculate the flow direction raster. 
+Although ArcGIS can process larger rasters as it doesn't read the whole thing into memory.
+
 License is Apache 2.0
 
 """
