@@ -3,6 +3,8 @@ from shapefile import (Reader, Writer)
 
 try:  # Py2 (I haven't actually tested on python 2...)
     from StringIO import StringIO as IO
+    import warnings
+    warnings.warn('Python 2...? Get with the times!', DeprecationWarning)
 except ImportError:  # Py3
     from io import BytesIO as IO
 
