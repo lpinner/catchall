@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # TODO does not work with arrow keys
+import re
 import subprocess
-import dbus
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Budgie', '1.0')
@@ -23,12 +23,14 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
         Budgie.Applet.__init__(self)
         self.uuid = uuid
         self.manager = None
+        self.displays = self.detect_displays()
 
         # Panel Button
         self.box = Gtk.EventBox()
         self.icon = Gtk.Image.new_from_icon_name(
             "display-brightness-symbolic",
             Gtk.IconSize.MENU)
+        self.icon.use_fallback = True
         self.box.add(self.icon)
         self.box.set_tooltip_text("Screen Brightness")
         self.add(self.box)
@@ -40,21 +42,29 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
         layout = Gtk.Grid()
         layout.set_border_width(6)
 
+        self.set_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
+
         adjustment = Gtk.Adjustment(50, 5, 100, 5, 0, 0)
 
         self.scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=adjustment)
-        self.set_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
+
         self.scale.set_draw_value(False)
 
         self.scale.set_vexpand(True)
         self.scale.set_hexpand(True)
 
-        for i, mark in enumerate( (0, 25, 50, 75, 100)):
+        for mark in (0, 25, 50, 75, 100):
             self.scale.add_mark(mark, Gtk.PositionType.LEFT, str(mark))
 
-        layout.add(self.scale)
+        # Connect signals
+        self.scale.connect("button-release-event", self.button_released)
+
+        self.brightness = self.get_brightness()
+        self.scale.set_value(self.brightness)
+
+        layout.attach(self.scale, 0, 0, 1, 1)
 
         self.popover.add(layout)
 
@@ -62,15 +72,17 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
         self.box.show_all()
         self.show_all()
 
-        # Connect signals
-        self.scale.connect("button-release-event", self.button_released)
         self.box.connect("button-press-event", self._on_press)
 
-        self.scale.set_value(self.get_brightness())
-
-    def button_released(self, *args, **kwargs):
-        self.set_brightness(int(self.scale.get_value()))
+    def button_released(self, scale, event):
+        brightness = int(self.scale.get_value())
+        self.set_brightness(brightness)
         return True
+
+    def detect_displays(self):
+        out = subprocess.check_output(['ddcutil', 'detect'], encoding='utf8')
+        displays = [d for d in re.findall('Display ([1-9])', out)]
+        return displays
 
     def do_supports_settings(self):
         return False
@@ -82,16 +94,23 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
     def get_brightness(self):
         # Example:
         # "VCP 10 C 50 100"
-        _, _, _, value, maximum = subprocess.check_output(
-            ['ddcutil', '-t', 'getvcp', '10'], 
-            encoding='utf8').split()
-        value = int(value)
+        values = []
+        for d in self.displays:
+            _, _, _, value, maximum = subprocess.check_output(
+                ['ddcutil', '-d', d, '-t', 'getvcp', '10'],
+                encoding='utf8').split()
+            values.append(int(value))
+        value = max(values)
         self.update_icon(value)
         return value
 
     def set_brightness(self, value):
-        subprocess.call(['ddcutil' ,'setvcp', '10', str(value)])
-        self.update_icon(value)
+        self.popover.hide()
+        for d in self.displays:
+            self.brightness = value
+            self.update_icon(value)
+            args = ['ddcutil', '-d', d, 'setvcp', '10', str(value)]
+            subprocess.call(args)
 
     def update_icon(self, value):
         if value <= 25:
@@ -103,7 +122,7 @@ class BudgieDdcBrightnessApplet(Budgie.Applet):
 
         self.icon.set_from_icon_name(icon, Gtk.IconSize.BUTTON)
 
-    def	_on_press(self, box, e):
+    def _on_press(self, box, e):
         # Ignore anything other than left or middle click
         if e.button not in [1, 2]:
             return Gdk.EVENT_PROPAGATE
